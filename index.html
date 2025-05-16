@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Учет расходов ЖКХ</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+      --bg-color: #1a1a1a;
+      --card-color: #2d2d2d;
+      --text-color: white;
+      --border-color: #444;
+      --highlight-color: #3b82f6;
+      --transition-speed: 0.3s;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: all var(--transition-speed) ease;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      width: 100%;
+      max-width: 900px;
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-color);
+      z-index: 10;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+
+    main {
+      padding: 1rem;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    /* Tabs */
+    .tabs-container {
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      background-color: var(--card-color);
+      white-space: nowrap;
+      font-weight: 500;
+      flex-shrink: 0;
+      border: 1px solid transparent;
+    }
+
+    .tab:hover {
+      transform: translateY(-2px);
+    }
+
+    .tab.active {
+      background-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--card-color);
+      padding: 1.25rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: var(--text-color);
+    }
+
+    /* Forms */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-size: 1rem;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #4f46e5;
+      transform: translateY(-2px);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background-color: var(--success-color);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #059669;
+      transform: translateY(-2px);
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      font-weight: 600;
+      background-color: rgba(0,0,0,0.1);
+    }
+
+    tr:hover {
+      background-color: rgba(255,255,255,0.05);
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    /* Charts */
+    .chart-container {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #999;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .tab-content {
+      animation: slideIn var(--transition-speed) ease-out;
+    }
+
+    /* Mobile styles */
+    @media (max-width: 768px) {
+      body {
+        font-size: 15px;
+      }
+      
+      header h1 {
+        font-size: 1.5rem;
+      }
+      
+      .tabs {
+        gap: 0.25rem;
+        padding-bottom: 0.25rem;
+      }
+      
+      .tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+      
+      .card {
+        padding: 1rem;
+        border-radius: 0.5rem;
+      }
+      
+      input, select {
+        padding: 0.65rem;
+      }
+      
+      button {
+        padding: 0.65rem 1rem;
+        font-size: 0.95rem;
+      }
+      
+      th, td {
+        padding: 0.5rem;
+      }
+      
+      .actions {
+        gap: 0.25rem;
+      }
+      
+      .actions button {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      
+      .controls {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      
+      .controls button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding: 0.75rem;
+        gap: 1rem;
+      }
+      
+      .card {
+        padding: 0.75rem;
+      }
+      
+      .card h3 {
+        font-size: 1.1rem;
+      }
+      
+      table {
+        font-size: 0.8rem;
+      }
+      
+      th, td {
+        padding: 0.4rem;
+      }
+      
+      .form-group {
+        gap: 0.2rem;
+      }
+      
+      label {
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Учет расходов ЖКХ</h1>
+  </header>
+
+  <main>
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-tab="electricity">Электричество</div>
+        <div class="tab" data-tab="water">Вода</div>
+        <div class="tab" data-tab="gas">Газ</div>
+        <div class="tab" data-tab="trash">Мусор</div>
+        <div class="tab" data-tab="repair">Капремонт</div>
+        <div class="tab" data-tab="heating">Отопление</div>
+        <div class="tab" data-tab="rent">Квартплата</div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="card tab-content">
+      <form id="entry-form">
+        <input type="hidden" id="active-tab" value="electricity" />
+        <input type="hidden" id="edit-id" value="" />
+
+        <div class="form-group">
+          <label for="month">Месяц</label>
+          <select id="month" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="year">Год</label>
+          <select id="year" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Сумма (руб.)</label>
+          <input type="number" step="0.01" id="amount" required />
+        </div>
+
+        <div id="extra-inputs"></div>
+
+        <button type="submit" id="save-btn" class="btn-primary">Добавить запись</button>
+      </form>
+    </div>
+
+    <!-- Initial Readings -->
+    <div class="card" id="initial-readings-form" style="display:none;">
+      <h3>Начальные показания</h3>
+      <form id="readings-form">
+        <div id="initial-readings-fields"></div>
+        <button type="submit" class="btn-success">Сохранить начальные показания</button>
+      </form>
+    </div>
+
+    <!-- Records Table -->
+    <div class="card tab-content">
+      <h3>Записи по разделу</h3>
+      <div id="records-table-container" class="empty-state">Нет записей</div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card tab-content">
+      <h3 id="chart-title">График потребления</h3>
+      <select id="year-filter" class="form-group"></select>
+      <div class="chart-container">
+        <canvas id="chart-consumption" height="150"></canvas>
+      </div>
+
+      <h3 id="chart-water-split-title" style="margin-top: 2rem; display: none;">Потребление Воды</h3>
+      <div class="chart-container">
+        <canvas id="chart-water-split" height="150" style="display: none;"></canvas>
+      </div>
+
+      <h3 id="chart-payment-title" style="margin-top: 2rem;">График суммы оплаты</h3>
+      <div class="chart-container">
+        <canvas id="chart-payment" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- Total per Year -->
+    <div class="card tab-content">
+      <h3>Общая сумма оплаты по годам</h3>
+      <div id="total-table-container" class="empty-state">Нет данных</div>
+    </div>
+
+    <!-- Total per Month -->
+    <div class="card tab-content">
+      <h3>Общая сумма оплаты по месяцам</h3>
+      <div id="monthly-table-container" class="empty-state">Нет данных</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button onclick="exportToExcel()" class="btn-success">Экспорт в Excel</button>
+      <button onclick="clearAllData()" class="btn-danger">Очистить данные</button>
+    </div>
+  </main>
+
+  <script>
+    // Основные данные и константы
+    const months = [
+      "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+      "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    ];
+    const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+
+    const sections = {
+      electricity: { label: "Электричество", hasReading: true },
+      water: { label: "Вода", hasReading: false },
+      gas: { label: "Газ", hasReading: true },
+      trash: { label: "Мусор", hasReading: false },
+      repair: { label: "Капремонт", hasReading: false },
+      heating: { label: "Отопление", hasReading: false },
+      rent: { label: "Квартплата", hasReading: false }
+    };
+
+    // Хранение данных
+    const STORAGE_KEY = "jkh_app_data_v2";
+    let data = {};
+    let initialReadings = {};
+
+    // DOM элементы
+    const monthSelect = document.getElementById("month");
+    const yearSelect = document.getElementById("year");
+    const yearFilter = document.getElementById("year-filter");
+
+    const tabContainer = document.getElementById("tabs");
+    const form = document.getElementById("entry-form");
+    const extraInputs = document.getElementById("extra-inputs");
+
+    const chartCtxConsumption = document.getElementById("chart-consumption").getContext("2d");
+    const chartCtxWaterSplit = document.getElementById("chart-water-split").getContext("2d");
+    const chartCtxPayment = document.getElementById("chart-payment").getContext("2d");
+
+    const chartTitle = document.getElementById("chart-title");
+    const chartWaterSplitTitle = document.getElementById("chart-water-split-title");
+    const chartPaymentTitle = document.getElementById("chart-payment-title");
+
+    const totalTableContainer = document.getElementById("total-table-container");
+    const monthlyTableContainer = document.getElementById("monthly-table-container");
+    const recordsTableContainer = document.getElementById("records-table-container");
+
+    const activeTabInput = document.getElementById("active-tab");
+    const readingsForm = document.getElementById("readings-form");
+    const readingsFields = document.getElementById("initial-readings-fields");
+    const editIdInput = document.getElementById("edit-id");
+    const saveBtn = document.getElementById("save-btn");
+
+    let chartConsumption, chartWaterSplit, chartPayment;
+
+    // Инициализация приложения
+    function initApp() {
+      loadDataFromLocalStorage();
+      populateSelects();
+      setupEventListeners();
+      updateUI();
+    }
+
+    // Загрузка данных из localStorage
+    function loadDataFromLocalStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          data = parsed.data || {};
+          initialReadings = parsed.initialReadings || {};
+        } catch (e) {
+          console.error("Ошибка загрузки данных:", e);
+          resetData();
+        }
+      } else {
+        resetData();
+      }
+    }
+
+    function resetData() {
+      data = {};
+      initialReadings = {};
+      Object.keys(sections).forEach(key => data[key] = []);
+    }
+
+    // Сохранение данных в localStorage
+    function saveDataToLocalStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        data,
+        initialReadings
+      }));
+    }
+
+    // Заполнение выпадающих списков
+    function populateSelects() {
+      monthSelect.innerHTML = "";
+      yearSelect.innerHTML = "";
+      yearFilter.innerHTML = "";
+
+      months.forEach((m, i) => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+
+      years.forEach(y => {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+        
+        const filterOpt = opt.cloneNode(true);
+        yearFilter.appendChild(filterOpt);
+      });
+      
+      // Установить текущий год по умолчанию
+      const currentYear = new Date().getFullYear();
+      yearSelect.value = currentYear;
+      yearFilter.value = currentYear;
+    }
+
+    // Настройка обработчиков событий
+    function setupEventListeners() {
+      // Переключение вкладок
+      tabContainer.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          tabContainer.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          activeTabInput.value = tab.dataset.tab;
+          updateUI();
+        });
+      });
+
+      // Основная форма
+      form.addEventListener("submit", handleFormSubmit);
+      
+      // Форма начальных показаний
+      readingsForm.addEventListener("submit", handleReadingsSubmit);
+      
+      // Фильтр по году
+      yearFilter.addEventListener("change", () => {
+        updateCharts();
+      });
+    }
+
+    // Обработка отправки основной формы
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      const tab = activeTabInput.value;
+      const month = monthSelect.value;
+      const year = parseInt(yearSelect.value);
+      const amount = parseFloat(document.getElementById("amount").value);
+      const date = new Date(year, months.indexOf(month)).getTime();
+
+      const entry = {
+        monthIndex: months.indexOf(month),
+        date,
+        amount,
+      };
+
+      // Дополнительные поля для разных типов услуг
+      if (["electricity", "gas"].includes(tab)) {
+        entry.reading = parseFloat(document.getElementById("reading").value);
+        const prev = [...data[tab]].reverse().find(e => e.date < date)?.reading || (initialReadings[tab] || 0);
+        entry.consumption = entry.reading - prev;
+      } else if (tab === "water") {
+        entry.coldWater = parseFloat(document.getElementById("coldWater").value);
+        entry.hotWater = parseFloat(document.getElementById("hotWater").value);
+
+        const prevCold = [...data.water].reverse().find(e => e.date < date)?.coldWater || (initialReadings.coldWater || 0);
+        const prevHot = [...data.water].reverse().find(e => e.date < date)?.hotWater || (initialReadings.hotWater || 0);
+
+        entry.consumptionCold = entry.coldWater - prevCold;
+        entry.consumptionHot = entry.hotWater - prevHot;
+        entry.totalConsumption = entry.consumptionCold + entry.consumptionHot;
+      }
+
+      // Редактирование или добавление записи
+      const editId = editIdInput.value;
+      if (editId) {
+        const index = data[tab].findIndex(e => e.id === editId);
+        if (index !== -1) {
+          data[tab][index] = { ...data[tab][index], ...entry };
+        }
+        editIdInput.value = "";
+        saveBtn.textContent = "Добавить запись";
+      } else {
+        entry.id = Date.now().toString();
+        data[tab].push(entry);
+      }
+
+      form.reset();
+      saveDataToLocalStorage();
+      updateUI();
+    }
+
+    // Обработка сохранения начальных показаний
+    function handleReadingsSubmit(e) {
+      e.preventDefault();
+      const tab = activeTabInput.value;
+      const formData = new FormData(readingsForm);
+      
+      formData.forEach((value, key) => {
+        initialReadings[key] = parseFloat(value) || 0;
+      });
+      
+      saveDataToLocalStorage();
+      
+      // Анимация успешного сохранения
+      const submitBtn = e.target.querySelector("button");
+      submitBtn.textContent = "✓ Сохранено";
+      submitBtn.style.backgroundColor = "#10b981";
+      
+      setTimeout(() => {
+        submitBtn.textContent = "Сохранить начальные показания";
+        submitBtn.style.backgroundColor = "";
+      }, 2000);
+    }
+
+    // Обновление интерфейса
+    function updateUI() {
+      updateForm();
+      updateInitialReadings();
+      updateCharts();
+      updateTotalPerYear();
+      updateTotalPerMonth();
+      updateRecordsTable();
+    }
+
+    // Обновление формы в зависимости от выбранной вкладки
+    function updateForm() {
+      const activeTab = activeTabInput.value;
+      extraInputs.innerHTML = "";
+      
+      if (["electricity", "gas"].includes(activeTab)) {
+        extraInputs.innerHTML = `
+          <div class="form-group">
+            <label for="reading">Показание счетчика</label>
+            <input type="number" step="0.01" id="reading" required />
+          </div>
+        `;
+      } else if (activeTab === "water") {
+        extraInputs.innerHTML = `
+          <div class="form-group">
+            <label for="coldWater">Холодная вода (м³)</label>
+            <input type="number" step="0.01" id="coldWater" required />
+          </div>
+          <div class="form-group">
+            <label for="hotWater">Горячая вода (м³)</label>
+            <input type="number" step="0.01" id="hotWater" required />
+          </div>
+        `;
+      }
+    }
+
+    // Обновление формы начальных показаний
+    function updateInitialReadings() {
+      const activeTab = activeTabInput.value;
+      readingsFields.innerHTML = "";
+      readingsForm.parentElement.style.display = ["electricity", "water", "gas"].includes(activeTab) ? "block" : "none";
+
+      if (["electricity", "gas"].includes(activeTab)) {
+        const key = activeTab;
+        readingsFields.innerHTML = `
+          <div class="form-group">
+            <label for="${key}-initial">Начальное значение</label>
+            <input type="number" step="0.01" id="${key}-initial" name="${key}" 
+                   value="${initialReadings[key] || ''}" required />
+          </div>
+        `;
+      } else if (activeTab === "water") {
+        readingsFields.innerHTML = `
+          <div class="form-group">
+            <label for="coldWater-initial">Холодная вода</label>
+            <input type="number" step="0.01" id="coldWater-initial" name="coldWater" 
+                   value="${initialReadings.coldWater || ''}" required />
+          </div>
+          <div class="form-group">
+            <label for="hotWater-initial">Горячая вода</label>
+            <input type="number" step="0.01" id="hotWater-initial" name="hotWater" 
+                   value="${initialReadings.hotWater || ''}" required />
+          </div>
+        `;
+      }
+    }
+
+    // Обновление таблицы записей
+    function updateRecordsTable() {
+      const tab = activeTabInput.value;
+      const entries = data[tab] || [];
+
+      if (entries.length === 0) {
+        recordsTableContainer.innerHTML = '<div class="empty-state">Нет записей</div>';
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Месяц</th>
+              <th>Год</th>
+              <th>Сумма</th>`;
+
+      if (["electricity", "gas"].includes(tab)) {
+        html += `<th>Показания</th><th>Расход</th>`;
+      } else if (tab === "water") {
+        html += `<th>Холодная</th><th>Горячая</th><th>Расход</th>`;
+      }
+
+      html += `<th>Действия</th></tr></thead><tbody>`;
+
+      entries.sort((a, b) => a.date - b.date).forEach(e => {
+        const monthName = months[e.monthIndex];
+        const year = new Date(e.date).getFullYear();
+        
+        html += `<tr>
+          <td>${monthName}</td>
+          <td>${year}</td>
+          <td>${e.amount.toFixed(2)}</td>`;
+
+        if (["electricity", "gas"].includes(tab)) {
+          html += `<td>${e.reading?.toFixed(2) ?? "-"}</td>
+                   <td>${e.consumption?.toFixed(2) ?? "-"}</td>`;
+        } else if (tab === "water") {
+          html += `<td>${e.coldWater?.toFixed(2) ?? "-"}</td>
+                   <td>${e.hotWater?.toFixed(2) ?? "-"}</td>
+                   <td>${e.totalConsumption?.toFixed(2) ?? "-"}</td>`;
+        }
+
+        html += `<td class="actions">
+            <button onclick='editRecord("${e.id}")' class="btn-primary">Ред.</button>
+            <button onclick='deleteRecord("${e.id}")' class="btn-danger">Уд.</button>
+          </td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      recordsTableContainer.innerHTML = html;
+    }
+
+    // Обновление графиков
+    function updateCharts() {
+      const tab = activeTabInput.value;
+      const year = parseInt(yearFilter.value);
+      const filtered = (data[tab] || []).filter(d => new Date(d.date).getFullYear() === year);
+      const labels = filtered.map(d => months[d.monthIndex]);
+
+      // Уничтожаем старые графики
+      if (chartConsumption) chartConsumption.destroy();
+      if (chartWaterSplit) chartWaterSplit.destroy();
+      if (chartPayment) chartPayment.destroy();
+
+      // График потребления
+      if (["electricity", "gas"].some(t => t === tab) && filtered.length > 0) {
+        chartTitle.textContent = `Потребление ${sections[tab].label.toLowerCase()}`;
+        chartTitle.style.display = "block";
+        document.getElementById("chart-consumption").style.display = "block";
+
+        const consumptionValues = filtered.map(d => d.consumption || 0);
+        chartConsumption = new Chart(chartCtxConsumption, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ 
+              label: "Потребление", 
+              data: consumptionValues, 
+              backgroundColor: "#6366f1",
+              borderRadius: 4
+            }]
+          },
+          options: chartOptions()
+        });
+      } else if (tab === "water" && filtered.length > 0) {
+        chartTitle.textContent = "Потребление воды";
+        chartTitle.style.display = "block";
+        document.getElementById("chart-consumption").style.display = "block";
+
+        const coldValues = filtered.map(d => d.consumptionCold || 0);
+        const hotValues = filtered.map(d => d.consumptionHot || 0);
+        const totalValues = coldValues.map((c, i) => c + hotValues[i]);
+
+        chartConsumption = new Chart(chartCtxConsumption, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ 
+              label: "Общее потребление", 
+              data: totalValues, 
+              backgroundColor: "#6366f1",
+              borderRadius: 4
+            }]
+          },
+          options: chartOptions()
+        });
+      } else {
+        chartTitle.style.display = "none";
+        document.getElementById("chart-consumption").style.display = "none";
+      }
+
+      // Разбивка воды
+      if (tab === "water" && filtered.length > 0) {
+        chartWaterSplitTitle.style.display = "block";
+        document.getElementById("chart-water-split").style.display = "block";
+
+        const coldValues = filtered.map(d => d.consumptionCold || 0);
+        const hotValues = filtered.map(d => d.consumptionHot || 0);
+
+        chartWaterSplit = new Chart(chartCtxWaterSplit, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              { 
+                label: "Холодная вода", 
+                data: coldValues, 
+                backgroundColor: "#3b82f6",
+                borderRadius: 4
+              },
+              { 
+                label: "Горячая вода", 
+                data: hotValues, 
+                backgroundColor: "#ef4444",
+                borderRadius: 4
+              }
+            ]
+          },
+          options: chartOptions()
+        });
+      } else {
+        chartWaterSplitTitle.style.display = "none";
+        document.getElementById("chart-water-split").style.display = "none";
+      }
+
+      // График оплаты
+      if (filtered.length > 0) {
+        chartPaymentTitle.style.display = "block";
+        document.getElementById("chart-payment").style.display = "block";
+
+        const paymentValues = filtered.map(d => d.amount);
+        chartPayment = new Chart(chartCtxPayment, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ 
+              label: "Сумма, руб.", 
+              data: paymentValues, 
+              backgroundColor: "#10b981",
+              borderRadius: 4
+            }]
+          },
+          options: chartOptions()
+        });
+      } else {
+        chartPaymentTitle.style.display = "none";
+        document.getElementById("chart-payment").style.display = "none";
+      }
+    }
+
+    // Настройки графиков
+    function chartOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { 
+            labels: { 
+              color: "white",
+              font: {
+                size: window.innerWidth < 768 ? 12 : 14
+              }
+            } 
+          },
+          tooltip: { 
+            enabled: true,
+            bodyFont: {
+              size: window.innerWidth < 768 ? 12 : 14
+            }
+          }
+        },
+        scales: {
+          x: { 
+            ticks: { 
+              color: "white",
+              font: {
+                size: window.innerWidth < 768 ? 12 : 14
+              }
+            }, 
+            grid: { 
+              color: "#333",
+              display: false
+            } 
+          },
+          y: { 
+            ticks: { 
+              color: "white",
+              font: {
+                size: window.innerWidth < 768 ? 12 : 14
+              }
+            }, 
+            grid: { 
+              color: "#333",
+              borderDash: [3, 3]
+            },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    // Расчет общей суммы по годам
+    function calculateTotalPerYear() {
+      const totals = {};
+      for (const [section, entries] of Object.entries(data)) {
+        for (const e of entries) {
+          const y = new Date(e.date).getFullYear();
+          totals[y] = (totals[y] || 0) + e.amount;
+        }
+      }
+      return totals;
+    }
+
+    // Обновление таблицы с суммами по годам
+    function updateTotalPerYear() {
+      const totals = calculateTotalPerYear();
+      
+      if (Object.keys(totals).length === 0) {
+        totalTableContainer.innerHTML = '<div class="empty-state">Нет данных</div>';
+        return;
+      }
+
+      totalTableContainer.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Год</th>
+              <th>Сумма, руб.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(totals)
+              .sort(([a], [b]) => b - a)
+              .map(([y, t]) => `
+                <tr>
+                  <td>${y}</td>
+                  <td>${t.toFixed(2)}</td>
+                </tr>
+              `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Расчет общей суммы по месяцам
+    function calculateTotalPerMonth() {
+      const totals = {};
+      for (const entries of Object.values(data)) {
+        for (const e of entries) {
+          const key = `${new Date(e.date).getFullYear()}-${months[new Date(e.date).getMonth()]}`;
+          totals[key] = (totals[key] || 0) + e.amount;
+        }
+      }
+      return Object.entries(totals).sort(([a], [b]) => new Date(a) - new Date(b));
+    }
+
+    // Обновление таблицы с суммами по месяцам
+    function updateTotalPerMonth() {
+      const monthlyTotals = calculateTotalPerMonth();
+      
+      if (monthlyTotals.length === 0) {
+        monthlyTableContainer.innerHTML = '<div class="empty-state">Нет данных</div>';
+        return;
+      }
+
+      monthlyTableContainer.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Период</th>
+              <th>Сумма, руб.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${monthlyTotals.map(([key, sum]) => {
+              const [year, month] = key.split("-");
+              return `
+                <tr>
+                  <td>${month} ${year}</td>
+                  <td>${sum.toFixed(2)}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Экспорт в Excel
+    function exportToExcel() {
+      let csv = "Раздел,Месяц,Год,Сумма,Показания,Расход\n";
+      for (const [section, entries] of Object.entries(data)) {
+        for (const e of entries) {
+          const monthName = months[e.monthIndex];
+          const year = new Date(e.date).getFullYear();
+          const reading = e.reading || e.totalConsumption || "-";
+          const consumption = e.consumption || e.totalConsumption || "-";
+          csv += `${section},${monthName},${year},${e.amount.toFixed(2)},${reading},${consumption}\n`;
+        }
+      }
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `jkh_data_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+      
+      // Анимация кнопки
+      const btn = document.querySelector('.controls .btn-success');
+      btn.textContent = '✓ Экспортировано';
+      setTimeout(() => {
+        btn.textContent = 'Экспорт в Excel';
+      }, 2000);
+    }
+
+    // Очистка всех данных
+    function clearAllData() {
+      if (confirm("Вы уверены, что хотите удалить все данные? Это действие нельзя отменить.")) {
+        resetData();
+        saveDataToLocalStorage();
+        updateUI();
+        
+        // Анимация очистки
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+          card.style.animation = 'fadeOut 0.3s ease-out';
+          setTimeout(() => {
+            card.style.animation = 'fadeIn 0.5s ease-out';
+          }, 300);
+        });
+      }
+    }
+
+    // Редактирование записи
+    window.editRecord = function(id) {
+      const tab = activeTabInput.value;
+      const entry = data[tab]?.find(e => e.id === id);
+      if (!entry) return;
+
+      monthSelect.value = months[entry.monthIndex];
+      yearSelect.value = new Date(entry.date).getFullYear();
+      document.getElementById("amount").value = entry.amount.toFixed(2);
+
+      if (["electricity", "gas"].includes(tab)) {
+        document.getElementById("reading").value = entry.reading?.toFixed(2) ?? "";
+      } else if (tab === "water") {
+        document.getElementById("coldWater").value = entry.coldWater?.toFixed(2) ?? "";
+        document.getElementById("hotWater").value = entry.hotWater?.toFixed(2) ?? "";
+      }
+
+      editIdInput.value = id;
+      saveBtn.textContent = "Сохранить изменения";
+      
+      // Прокрутка к форме
+      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    // Удаление записи
+    window.deleteRecord = function(id) {
+      if (!confirm("Удалить эту запись?")) return;
+      
+      const tab = activeTabInput.value;
+      data[tab] = data[tab].filter(e => e.id !== id);
+      saveDataToLocalStorage();
+      updateUI();
+    };
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
